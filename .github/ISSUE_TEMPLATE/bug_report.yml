@@ -1,0 +1,27 @@
+name: Wrong validation result
+description: A document is accepted or rejected incorrectly
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: '**Never paste a real ID number.** Change the digits that identify the person and keep the part that matters (e.g. the municipality code).'
+  - type: input
+    id: document
+    attributes:
+      label: Country and document type
+      placeholder: HN / DNI
+    validations:
+      required: true
+  - type: input
+    id: value
+    attributes:
+      label: Anonymized value
+      placeholder: 0801-1990-00000
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect, and what's your source?
+    validations:
+      required: true

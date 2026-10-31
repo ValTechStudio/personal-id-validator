@@ -1,0 +1,138 @@
+import { describe, expect, it } from 'vitest'
+import { getDocumentType, messages } from '../index'
+import {
+  departments,
+  dni,
+  parseDni,
+  parseRtn,
+  passport,
+  residence,
+  rtn,
+} from '.'
+
+// Fixtures are made up and use sequence 00000 so they're unlikely to be anyone's real ID.
+describe('municipalities', () => {
+  it('has the 18 departments and 298 municipalities of the RNP table', () => {
+    expect(departments).toHaveLength(18)
+    expect(departments.flatMap((d) => d.municipalities)).toHaveLength(298)
+  })
+})
+
+describe('DNI', () => {
+  it.each([
+    '0801199000000',
+    '0801-1990-00000',
+    ' 0801 1990 00000 ',
+    '1628-2001-00000',
+  ])('accepts %j', (value) => expect(dni.validate(value).valid).toBe(true))
+
+  it.each([
+    ['', 'INVALID_LENGTH'],
+    ['080119900000', 'INVALID_LENGTH'],
+    ['08011990000000', 'INVALID_LENGTH'],
+    ['0801-1990-0000A', 'INVALID_FORMAT'],
+    ['0001199000000', 'INVALID_DEPARTMENT'],
+    ['1901199000000', 'INVALID_DEPARTMENT'],
+    ['0800199000000', 'INVALID_MUNICIPALITY'],
+    ['0829199000000', 'INVALID_MUNICIPALITY'],
+    ['1105199000000', 'INVALID_MUNICIPALITY'],
+    ['0801189900000', 'INVALID_YEAR'],
+    [`0801${new Date().getFullYear() + 1}00000`, 'INVALID_YEAR'],
+  ])('rejects %j with %s', (value, error) => {
+    expect(dni.validate(value)).toEqual({ valid: false, error })
+  })
+
+  it('formats', () => {
+    expect(dni.format('0801199000000')).toBe('0801-1990-00000')
+    expect(dni.format('080119')).toBe('080119')
+    expect(dni.formatPartial('0801')).toBe('0801')
+    expect(dni.formatPartial('08011')).toBe('0801-1')
+    expect(dni.formatPartial('0801-1990-0')).toBe('0801-1990-0')
+    expect(dni.formatPartial('0801199000000999')).toBe('0801-1990-00000')
+    expect(dni.formatPartial('ab08')).toBe('08')
+    expect(dni.formatPartial(dni.example)).toBe(dni.example)
+    expect(dni.example).toHaveLength(dni.maxLength)
+  })
+
+  it('parses', () => {
+    expect(parseDni('0501-1985-00000')).toEqual({
+      department: { code: '05', name: 'Cortés' },
+      municipality: { code: '0501', name: 'San Pedro Sula' },
+      year: 1985,
+      sequence: '00000',
+    })
+    expect(parseDni('0801')).toBeUndefined()
+  })
+})
+
+describe('RTN', () => {
+  it('accepts 14 digits starting with a valid territory and year', () => {
+    expect(rtn.validate('0801-1990-00000-1')).toEqual({
+      valid: true,
+      compact: '08011990000001',
+    })
+  })
+
+  it.each([
+    ['0801199000000', 'INVALID_LENGTH'],
+    ['2001199000000-1', 'INVALID_DEPARTMENT'],
+    ['0899199000000-1', 'INVALID_MUNICIPALITY'],
+    ['0801099000000-1', 'INVALID_YEAR'],
+  ])('rejects %j with %s', (value, error) => {
+    expect(rtn.validate(value)).toEqual({ valid: false, error })
+  })
+
+  it('formats and parses', () => {
+    expect(rtn.format('08011990000001')).toBe('0801-1990-00000-1')
+    expect(rtn.formatPartial('0801199000000')).toBe('0801-1990-00000')
+    expect(rtn.formatPartial('08011990000001')).toBe('0801-1990-00000-1')
+    expect(rtn.example).toHaveLength(rtn.maxLength)
+    expect(parseRtn('0801-1990-00000-1')).toMatchObject({
+      municipality: { code: '0801', name: 'Distrito Central' },
+      checkDigit: '1',
+    })
+  })
+})
+
+describe('passport and residence card', () => {
+  it('normalizes case and separators', () => {
+    expect(passport.validate(' a 000-0000 ')).toEqual({
+      valid: true,
+      compact: 'A0000000',
+    })
+    expect(residence.formatPartial('ab-12')).toBe('AB12')
+  })
+
+  it('enforces length and characters', () => {
+    expect(passport.validate('A00000000')).toMatchObject({ valid: true })
+    expect(passport.validate('A000000000')).toEqual({
+      valid: false,
+      error: 'INVALID_LENGTH',
+    })
+    expect(passport.validate('')).toEqual({
+      valid: false,
+      error: 'INVALID_LENGTH',
+    })
+    expect(residence.validate('A/1')).toEqual({
+      valid: false,
+      error: 'INVALID_FORMAT',
+    })
+    expect(residence.validate('A'.repeat(21))).toEqual({
+      valid: false,
+      error: 'INVALID_LENGTH',
+    })
+  })
+})
+
+describe('getDocumentType', () => {
+  it('finds types case-insensitively and returns undefined otherwise', () => {
+    expect(getDocumentType('hn', 'dni')).toBe(dni)
+    expect(getDocumentType('HN', 'PASAPORTE')).toBe(passport)
+    expect(getDocumentType('HN', 'OTRO')).toBeUndefined()
+    expect(getDocumentType('GT', 'DNI')).toBeUndefined()
+  })
+
+  it('has a message for every error in both languages', () => {
+    expect(Object.keys(messages.es)).toEqual(Object.keys(messages.en))
+  })
+})

@@ -1,0 +1,91 @@
+{
+  "name": "@valtechstudio/personal-id-validator",
+  "version": "0.1.0",
+  "description": "Validate, format and parse Latin American personal ID documents (Honduras DNI, RTN, passport, residence card). Zero dependencies, TypeScript.",
+  "keywords": [
+    "honduras",
+    "dni",
+    "rtn",
+    "identidad",
+    "cedula",
+    "pasaporte",
+    "validation",
+    "validacion",
+    "national-id",
+    "tax-id",
+    "latam",
+    "typescript"
+  ],
+  "homepage": "https://valtechstudio.com/open-source/@valtechstudio/personal-id-validator",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ValTechStudio/personal-id-validator.git"
+  },
+  "bugs": "https://github.com/ValTechStudio/personal-id-validator/issues",
+  "license": "MIT",
+  "author": "Val Tech Studio (https://valtechstudio.com)",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.cts",
+  "typesVersions": {
+    "*": {
+      "hn": [
+        "./dist/hn/index.d.cts"
+      ]
+    }
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./hn": {
+      "import": {
+        "types": "./dist/hn/index.d.ts",
+        "default": "./dist/hn/index.js"
+      },
+      "require": {
+        "types": "./dist/hn/index.d.cts",
+        "default": "./dist/hn/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "changeset": "changeset",
+    "release": "npm run build && changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^3.0.3",
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.14.0",
+    "prettier": "^3.9.10",
+    "tsup": "^9.0.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.1",
+    "vitest": "^5.0.5"
+  }
+}

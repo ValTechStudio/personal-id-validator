@@ -1,0 +1,30 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write # npm Trusted Publishing (OIDC); provenance is generated automatically
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24 # ships npm >= 11.5.1, required for Trusted Publishing
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      # Opens a "Version Packages" PR from pending changesets; merging it publishes.
+      - uses: changesets/action@v1
+        with:
+          publish: npm run release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,17 @@
+name: New country or document type
+description: Ask for support of a new document
+labels: [enhancement]
+body:
+  - type: input
+    id: document
+    attributes:
+      label: Country and document
+      placeholder: Guatemala / CUI
+    validations:
+      required: true
+  - type: textarea
+    id: rules
+    attributes:
+      label: Format and rules, with links to official sources
+    validations:
+      required: true
