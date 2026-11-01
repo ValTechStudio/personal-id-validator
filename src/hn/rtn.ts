@@ -1,11 +1,6 @@
 import type { DocumentType, ValidateOptions } from '../types'
 import { territory, type Territory } from './municipalities'
-import {
-  compactNumeric,
-  formatComplete,
-  formatDigits,
-  validateNumeric,
-} from './numeric'
+import { compactNumeric, maskDigits, validateNumeric } from './numeric'
 import { RNP_CODES, SAR_RTN } from './sources'
 
 // ponytail: the 14th digit isn't checked; SAR hasn't published the algorithm.
@@ -24,7 +19,7 @@ export interface RtnParts extends Territory {
 export function parse(value: string): RtnParts | undefined {
   const result = validate(value)
   if (!result.valid) return undefined
-  const c = result.compact
+  const c = result.value
   return {
     ...territory(c),
     year: Number(c.slice(4, 8)),
@@ -49,7 +44,6 @@ export const rtn: DocumentType = {
   maxLength: 17,
   mask: '0000-0000-00000-0',
   compact: compactNumeric,
-  format: (value, options) => formatComplete(value, 14, options),
-  formatPartial: (value, options) => formatDigits(value, 14, options),
+  applyMask: (value, options) => maskDigits(value, 14, options),
   validate,
 }

@@ -4,7 +4,7 @@
 [![CI](https://github.com/ValTechStudio/personal-id-validator/actions/workflows/ci.yml/badge.svg)](https://github.com/ValTechStudio/personal-id-validator/actions/workflows/ci.yml)
 [![license](https://img.shields.io/npm/l/@valtechstudio/personal-id-validator)](./LICENSE)
 
-Valida, formatea y decodifica documentos de identidad de Latinoamérica. Primero Honduras: **DNI, RTN, pasaporte y carné de residente**. Sin dependencias, en TypeScript, funciona en el navegador y en Node (ESM y CommonJS).
+Valida, enmascara y decodifica documentos de identidad de Latinoamérica. Primero Honduras: **DNI, RTN, pasaporte y carné de residente**. Sin dependencias, en TypeScript, funciona en el navegador y en Node (ESM y CommonJS).
 
 **[Demo en vivo](https://valtechstudio.com/open-source/@valtechstudio/personal-id-validator)** · [English](./README.md)
 
@@ -12,58 +12,126 @@ Valida, formatea y decodifica documentos de identidad de Latinoamérica. Primero
 npm install @valtechstudio/personal-id-validator
 ```
 
-## Uso
+## Inicio rápido
 
 ```ts
-import { dni, parseDni } from '@valtechstudio/personal-id-validator/hn'
+import { dni } from '@valtechstudio/personal-id-validator/hn'
 
-dni.validate('0801-1990-00000') // { valid: true, compact: '0801199000000' }
-dni.validate('0899199000000') // { valid: false, error: 'INVALID_MUNICIPALITY' }
+const result = dni.validate('0801-1990-00000')
+// { valid: true, value: '0801199000000' }  → guarda y compara result.value
 
-dni.compact('0801-1990-00000') // '0801199000000'  → guarda y compara este valor
-dni.format('0801199000000') // '0801-1990-00000' → muestra este
-
-parseDni('0501-1985-00000')
-// { department: { code: '05', name: 'Cortés' },
-//   municipality: { code: '0501', name: 'San Pedro Sula' }, year: 1985, sequence: '00000' }
+dni.applyMask('0801199000000') // '0801-1990-00000' → muestra este
 ```
 
-### Elegir el tipo en tiempo de ejecución
+## Puntos de entrada
 
-Si el tipo viene de datos (por ejemplo, de la base de datos), usa `validateDocument`. Los tipos no soportados devuelven un error en vez de lanzar una excepción, y escriben un `console.warn` por cada tipo desconocido para que lo notes al desarrollar:
+El paquete tiene una **entrada raíz** con la API que no depende del país, y una **entrada por país** con sus tipos de documento y funciones propias.
+
+| Import                                      | Qué contiene                                                                                     |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `@valtechstudio/personal-id-validator`      | `validateDocument`, `getDocumentType`, `messages` y los tipos compartidos (abajo)                |
+| `@valtechstudio/personal-id-validator/<cc>` | Los tipos de documento del país (cada uno es un [`DocumentType`](#documenttype)) y sus funciones |
+
+### Países
+
+| Código | País     | Import                                    | Documentos                                   | Documentación                                                                                                                                                                                  |
+| ------ | -------- | ----------------------------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `HN`   | Honduras | `@valtechstudio/personal-id-validator/hn` | `DNI`, `RTN`, `PASAPORTE`, `CARNE_RESIDENTE` | [Español](https://github.com/ValTechStudio/personal-id-validator/blob/main/src/hn/README.es.md) · [English](https://github.com/ValTechStudio/personal-id-validator/blob/main/src/hn/README.md) |
+
+## API raíz
+
+### `validateDocument(country, code, value, options?)`
+
+Valida `value` como el tipo de documento `country:code` (sin distinguir mayúsculas). Úsala cuando el tipo viene de datos, por ejemplo de la base de datos. Devuelve un [`ValidationResult`](#validationresult).
+
+Los tipos no soportados no lanzan excepción: devuelven `UNSUPPORTED_DOCUMENT_TYPE` y escriben un `console.warn` por cada tipo desconocido, con la lista de los soportados.
 
 ```ts
 import { validateDocument } from '@valtechstudio/personal-id-validator'
 
-validateDocument('HN', 'RTN', '0801-1990-00000-1', { locale: 'es' })
-// { valid: true, compact: '08011990000001' }
+validateDocument('HN', 'RTN', '0801-1990-00000-1')
+// { valid: true, value: '08011990000001' }
+
+validateDocument('HN', 'DNI', '0899199000000', { locale: 'es' })
+// { valid: false, error: 'INVALID_MUNICIPALITY', message: 'El código de municipio no existe.' }
 
 validateDocument('GT', 'CUI', '1234')
 // { valid: false, error: 'UNSUPPORTED_DOCUMENT_TYPE' } + console.warn
 ```
 
-`getDocumentType(country, code)` devuelve el tipo de documento (datos y funciones) o `undefined`.
+### `getDocumentType(country, code)`
+
+Devuelve el [`DocumentType`](#documenttype) de `country:code`, o `undefined` si no está soportado. Sirve para armar formularios desde datos (etiqueta, placeholder, `maxLength`, máscara).
+
+```ts
+const type = getDocumentType('HN', 'DNI')
+type?.placeholder // '0000-0000-00000'
+type?.applyMask('080119') // '0801-19'
+```
+
+### `messages`
+
+`messages[locale][error]`: los textos de error en `'es'` y `'en'`, por si muestras tus propios textos o traduces el código tú mismo.
+
+## `DocumentType`
+
+Todos los tipos de documento, de cualquier país, tienen la misma forma. Validar es la misma llamada si importas el tipo directamente o si usas `validateDocument`.
+
+| Miembro                      | Tipo                               | Descripción                                                                                                    |
+| ---------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `validate(value, options?)`  | `ValidationResult`                 | Acepta espacios, puntos y guiones; `result.value` es el valor normalizado                                      |
+| `applyMask(value, options?)` | `string`                           | Forma para mostrar de un valor completo o parcial: agrega separadores, pasa a mayúsculas y corta lo que sobra  |
+| `compact(value)`             | `string`                           | Quita separadores y espacios, sin validar                                                                      |
+| `country`                    | `string`                           | Código ISO del país, por ejemplo `'HN'`                                                                        |
+| `code`                       | `string`                           | Identificador estable, por ejemplo `'DNI'`                                                                     |
+| `name`                       | `{ es: string; en: string }`       | Nombre para mostrar                                                                                            |
+| `appliesTo`                  | `'person' \| 'company' \| 'both'`  | Quién tiene este documento                                                                                     |
+| `validation`                 | `'structural' \| 'loose'`          | `loose`: no hay formato oficial publicado, solo se revisan caracteres y longitud. Tu interfaz debería decirlo. |
+| `sources`                    | `{ label: string; url: string }[]` | Fuentes oficiales de las reglas                                                                                |
+| `example`                    | `string`                           | Un ejemplo inventado, con máscara                                                                              |
+| `placeholder`                | `string`                           | Para el `placeholder` de un input                                                                              |
+| `maxLength`                  | `number`                           | Largo del valor con máscara y el separador por defecto, para el `maxLength` de un input                        |
+| `mask`                       | `string \| undefined`              | Patrón para librerías de máscaras (`0` = dígito). Solo documentos numéricos.                                   |
 
 ### Opciones
 
-| Función                        | Opción            | Por defecto | Efecto                                                                                                |
-| ------------------------------ | ----------------- | ----------- | ----------------------------------------------------------------------------------------------------- |
-| `validate`, `validateDocument` | `allowSeparators` | `true`      | `false` rechaza espacios, puntos y guiones (`INVALID_FORMAT`), para APIs que exigen el valor compacto |
-| `validate`, `validateDocument` | `locale`          | ninguno     | `'es'` o `'en'`: los resultados con error incluyen también un `message`                               |
-| `format`, `formatPartial`      | `separator`       | `'-'`       | Separador entre grupos, por ejemplo `' '` o `''`. Pasaporte y carné de residente lo ignoran           |
+| Opción      | Lo usa                         | Por defecto | Efecto                                                                                    |
+| ----------- | ------------------------------ | ----------- | ----------------------------------------------------------------------------------------- |
+| `locale`    | `validate`, `validateDocument` | ninguno     | `'es'` o `'en'`: los resultados con error incluyen también un `message`                   |
+| `separator` | `applyMask`                    | `'-'`       | Separador entre grupos, por ejemplo `' '` o `''`. Los documentos alfanuméricos lo ignoran |
+
+### `ValidationResult`
 
 ```ts
-dni.format('0801199000000', { separator: ' ' }) // '0801 1990 00000'
-dni.validate('0801-1990-00000', { allowSeparators: false }) // { valid: false, error: 'INVALID_FORMAT' }
+type ValidationResult =
+  | { valid: true; value: string } // normalizado: sin separadores, en mayúsculas
+  | { valid: false; error: ValidationError; message?: string } // message solo con `locale`
 ```
+
+`value` nunca depende de los separadores que traiga el texto, así que el mismo documento siempre se guarda igual. Para mostrarlo, usa `applyMask(result.value)`.
+
+### Códigos de error
+
+| Código                      | Español                                   | English                                   |
+| --------------------------- | ----------------------------------------- | ----------------------------------------- |
+| `INVALID_FORMAT`            | Contiene caracteres no permitidos.        | Contains characters that are not allowed. |
+| `INVALID_LENGTH`            | La cantidad de caracteres no es correcta. | The number of characters is not correct.  |
+| `INVALID_DEPARTMENT`        | El código de departamento no existe.      | The department code does not exist.       |
+| `INVALID_MUNICIPALITY`      | El código de municipio no existe.         | The municipality code does not exist.     |
+| `INVALID_YEAR`              | El año no es válido.                      | The year is not valid.                    |
+| `UNSUPPORTED_DOCUMENT_TYPE` | Este tipo de documento no está soportado. | This document type is not supported.      |
+
+Qué códigos puede devolver cada documento está en la documentación de su país.
+
+## Recetas
 
 ### Máscaras en inputs
 
-`formatPartial(value)` formatea un valor incompleto (`'080119'` → `'0801-19'`). Solo transforma textos. Si escribes su resultado de vuelta en un input controlado, el navegador mueve el cursor al final, así que restaura el cursor tú mismo o usa una librería de máscaras con el patrón `mask` (`0` = dígito), como [Maskito](https://maskito.dev) o [IMask](https://imask.js.org):
+`applyMask` solo transforma textos. Si escribes su resultado de vuelta en un input controlado, el navegador mueve el cursor al final, así que restaura el cursor tú mismo (como hace la [demo](https://valtechstudio.com/open-source/@valtechstudio/personal-id-validator)) o pasa `mask` a una librería de máscaras como [Maskito](https://maskito.dev) o [IMask](https://imask.js.org):
 
-```ts
+```tsx
+;<input placeholder={dni.placeholder} maxLength={dni.maxLength} />
 dni.mask // '0000-0000-00000'
-rtn.mask // '0000-0000-00000-0'
 ```
 
 ### Con Zod / react-hook-form
@@ -72,27 +140,10 @@ rtn.mask // '0000-0000-00000-0'
 z.string().refine((v) => dni.validate(v).valid, 'DNI inválido')
 ```
 
-Cada tipo de documento incluye datos para formularios: `name` (`es`/`en`), `appliesTo` (`person` | `company` | `both`), `validation` (`structural` | `loose`), `sources`, `example`, `placeholder`, `maxLength` y `mask`.
-
-## Documentos soportados (Honduras)
-
-| Código            | Documento                       | Validación  | Regla                                                                                     | Fuente                                                                                                                                                       |
-| ----------------- | ------------------------------- | ----------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `DNI`             | Documento Nacional de Identidad | estructural | 13 dígitos `DDMM-AAAA-NNNNN`: departamento y municipio reales, año 1900–hoy               | [Tabla del RNP](https://web.archive.org/web/2018/http://www.rnp.hn/wp-content/uploads/2011/02/Cuadro-de-C%C3%83%C2%B3digos-de-Departamento-y-Municipios.pdf) |
-| `RTN`             | Registro Tributario Nacional    | estructural | 14 dígitos: el RTN de una persona es su DNI más 1 dígito; el último dígito no se verifica | [SAR](https://www.sar.gob.hn/registro-tributario-nacional-rtn/), RNP                                                                                         |
-| `PASAPORTE`       | Pasaporte                       | flexible    | 1–9 letras o dígitos (límite de OACI para el número de documento)                         | [OACI Doc 9303](https://www.icao.int/publications/doc-series/doc-9303)                                                                                       |
-| `CARNE_RESIDENTE` | Carné de residente (INM)        | flexible    | 1–20 letras o dígitos                                                                     | [Portal de Trámites](https://tramites.diger.gob.hn/landingPage/DetalleTramite/293)                                                                           |
-
-**Flexible** (`loose`) significa que no hay un formato oficial publicado, así que solo se revisan los caracteres y la longitud. Una interfaz debería decirlo en vez de afirmar que el número es "válido".
-
-Códigos de error: `INVALID_FORMAT`, `INVALID_LENGTH`, `INVALID_DEPARTMENT`, `INVALID_MUNICIPALITY`, `INVALID_YEAR`, `UNSUPPORTED_DOCUMENT_TYPE`. Los textos en español e inglés están en `messages`.
-
 ## Limitaciones
 
-- **Un formato válido no significa que el documento exista.** Eso solo lo confirman los registros oficiales (RNP, SAR), que esta librería no consulta.
-- El DNI no tiene dígito verificador público, así que la validación es estructural.
-- El último dígito del RTN es verificador, pero el SAR no ha publicado el algoritmo. Se acepta tal cual hasta confirmarlo.
-- El pasaporte y el carné de residente no tienen un formato nacional publicado. Sus ejemplos son ilustrativos.
+- **Un formato válido no significa que el documento exista.** Eso solo lo confirman los registros oficiales, que esta librería no consulta.
+- Las limitaciones de cada país (dígitos verificadores sin publicar, formatos flexibles) están en su documentación.
 
 ¿Un documento real es rechazado? [Abre un issue](https://github.com/ValTechStudio/personal-id-validator/issues) (nunca publiques el número real).
 
