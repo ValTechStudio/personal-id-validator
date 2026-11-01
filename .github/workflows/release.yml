@@ -15,16 +15,17 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24 # ships npm >= 11.5.1, required for Trusted Publishing
           cache: npm
           registry-url: https://registry.npmjs.org
       - run: npm ci
-      # Opens a "Version Packages" PR from pending changesets; merging it publishes.
-      - uses: changesets/action@v1
+      # Opens a "Version Packages" PR from pending changesets; merging it publishes,
+      # then pushes the git tag and creates the GitHub Release.
+      # v2 is required with @changesets/cli v3: v1 can't read v3's publish output.
+      - uses: changesets/action@v2
         with:
-          publish: npm run release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          publish-script: npm run release
+          github-token: ${{ secrets.GITHUB_TOKEN }}
