@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1200 630" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0c111d"/>
+      <stop offset="1" stop-color="#2c1c5f"/>
+    </linearGradient>
+    <linearGradient id="icon" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7f56d9"/>
+      <stop offset="1" stop-color="#9e77ed"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect x="96" y="170" width="200" height="200" rx="44" fill="url(#icon)"/>
+  <g fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" transform="translate(146 220) scale(4.1667)">
+    <path d="M16 10h2"/>
+    <path d="M16 14h2"/>
+    <path d="M6.17 15a3 3 0 0 1 5.66 0"/>
+    <circle cx="9" cy="11" r="2"/>
+    <rect x="2" y="5" width="20" height="14" rx="2"/>
+  </g>
+  <text x="344" y="248" font-family="Inter, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="64" font-weight="bold" style="font-family: Helvetica Neue; font-weight: bold" fill="#ffffff">Valida el DNI y RTN</text>
+  <text x="344" y="322" font-family="Inter, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="64" font-weight="bold" style="font-family: Helvetica Neue; font-weight: bold" fill="#ffffff">de Honduras</text>
+  <text x="344" y="380" font-family="Menlo, Consolas, monospace" font-size="26" fill="#d6bbfb">@valtechstudio/personal-id-validator</text>
+  <text x="96" y="480" font-family="Menlo, Consolas, monospace" font-size="30" fill="#ffffff">0801-1990-00000</text>
+  <text x="400" y="480" font-family="Menlo, Consolas, monospace" font-size="30" fill="#47cd89">✓ válido</text>
+  <text x="96" y="556" font-family="Inter, -apple-system, Helvetica, Arial, sans-serif" font-size="24" fill="#94969c">Open source · MIT · TypeScript · Sin dependencias — Val Tech Studio</text>
+</svg>

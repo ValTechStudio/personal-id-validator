@@ -1,8 +1,15 @@
-import type { DocumentType } from '../types'
+import type { DocumentType, ValidateOptions } from '../types'
 import { territory, type Territory } from './municipalities'
-import { compactNumeric, formatDigits, validateNumeric } from './numeric'
+import {
+  compactNumeric,
+  formatComplete,
+  formatDigits,
+  validateNumeric,
+} from './numeric'
+import { RNP_CODES } from './sources'
 
-const validate = (value: string) => validateNumeric(value, 13)
+const validate = (value: string, options?: ValidateOptions) =>
+  validateNumeric(value, 13, options)
 
 export interface DniParts extends Territory {
   /** Year the birth was registered (usually, not always, the birth year). */
@@ -27,14 +34,14 @@ export const dni: DocumentType = {
     en: 'National Identity Document',
   },
   appliesTo: 'person',
+  validation: 'structural',
+  sources: [RNP_CODES],
   example: '0801-1990-00000',
   placeholder: '0000-0000-00000',
   maxLength: 15,
+  mask: '0000-0000-00000',
   compact: compactNumeric,
-  format: (value) => {
-    const c = compactNumeric(value)
-    return /^\d{13}$/.test(c) ? formatDigits(c, 13) : c
-  },
-  formatPartial: (value) => formatDigits(value, 13),
+  format: (value, options) => formatComplete(value, 13, options),
+  formatPartial: (value, options) => formatDigits(value, 13, options),
   validate,
 }

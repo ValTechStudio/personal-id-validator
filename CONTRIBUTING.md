@@ -18,7 +18,7 @@ npm run build     # tsup → dist/
 2. Export the types and a `documentTypes` array from `src/<cc>/index.ts`.
 3. Register the country in `countries` in `src/index.ts`, add the entry to `tsup.config.ts`, and add a `./<cc>` subpath to `exports` in `package.json`.
 4. Add tests next to the code (`src/<cc>/<cc>.test.ts`) covering valid, malformed and edge cases.
-5. Cite the official source for every rule in a comment, and in the README table.
+5. Cite the official source for every rule in the type's `sources` (shown on the demo page) and in the README tables. Set `validation: 'loose'` when no official format exists and you can only check characters and length.
 6. Run `npx changeset` and describe the change.
 
 ## Rules

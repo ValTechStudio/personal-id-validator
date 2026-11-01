@@ -1,10 +1,17 @@
-import type { DocumentType } from '../types'
+import type { DocumentType, ValidateOptions } from '../types'
 import { territory, type Territory } from './municipalities'
-import { compactNumeric, formatDigits, validateNumeric } from './numeric'
+import {
+  compactNumeric,
+  formatComplete,
+  formatDigits,
+  validateNumeric,
+} from './numeric'
+import { RNP_CODES, SAR_RTN } from './sources'
 
 // ponytail: the 14th digit isn't checked; SAR hasn't published the algorithm.
 // Add an INVALID_CHECK_DIGIT error once it's confirmed against real RTNs.
-const validate = (value: string) => validateNumeric(value, 14)
+const validate = (value: string, options?: ValidateOptions) =>
+  validateNumeric(value, 14, options)
 
 export interface RtnParts extends Territory {
   year: number
@@ -35,14 +42,14 @@ export const rtn: DocumentType = {
     en: 'National Tax Registry Number',
   },
   appliesTo: 'both',
+  validation: 'structural',
+  sources: [RNP_CODES, SAR_RTN],
   example: '0801-1990-00000-1',
   placeholder: '0000-0000-00000-0',
   maxLength: 17,
+  mask: '0000-0000-00000-0',
   compact: compactNumeric,
-  format: (value) => {
-    const c = compactNumeric(value)
-    return /^\d{14}$/.test(c) ? formatDigits(c, 14) : c
-  },
-  formatPartial: (value) => formatDigits(value, 14),
+  format: (value, options) => formatComplete(value, 14, options),
+  formatPartial: (value, options) => formatDigits(value, 14, options),
   validate,
 }

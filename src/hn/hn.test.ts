@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { getDocumentType, messages } from '../index'
+import { describe, expect, it, vi } from 'vitest'
+import { getDocumentType, messages, validateDocument } from '../index'
 import {
   departments,
   dni,
@@ -9,6 +9,9 @@ import {
   residence,
   rtn,
 } from '.'
+
+// tsconfig has no DOM/Node typings (see src/index.ts).
+declare const console: { warn(...data: unknown[]): void }
 
 // Fixtures are made up and use sequence 00000 so they're unlikely to be anyone's real ID.
 describe('municipalities', () => {
@@ -134,5 +137,91 @@ describe('getDocumentType', () => {
 
   it('has a message for every error in both languages', () => {
     expect(Object.keys(messages.es)).toEqual(Object.keys(messages.en))
+  })
+})
+
+describe('options', () => {
+  it('allowSeparators: false only accepts compact input', () => {
+    const strict = { allowSeparators: false }
+    expect(dni.validate('0801199000000', strict).valid).toBe(true)
+    expect(dni.validate('0801-1990-00000', strict)).toEqual({
+      valid: false,
+      error: 'INVALID_FORMAT',
+    })
+    expect(passport.validate('a0000000', strict).valid).toBe(true)
+    expect(passport.validate('A 0000000', strict)).toMatchObject({
+      error: 'INVALID_FORMAT',
+    })
+  })
+
+  it('locale adds a message to failures only', () => {
+    expect(dni.validate('0899199000000', { locale: 'en' })).toEqual({
+      valid: false,
+      error: 'INVALID_MUNICIPALITY',
+      message: messages.en.INVALID_MUNICIPALITY,
+    })
+    expect(dni.validate('0801199000000', { locale: 'es' })).not.toHaveProperty(
+      'message',
+    )
+  })
+
+  it('separator changes format and formatPartial', () => {
+    expect(dni.format('0801199000000', { separator: ' ' })).toBe(
+      '0801 1990 00000',
+    )
+    expect(rtn.format('08011990000001', { separator: '' })).toBe(
+      '08011990000001',
+    )
+    expect(dni.formatPartial('080119', { separator: '.' })).toBe('0801.19')
+    expect(dni.formatPartial('0801 19', { separator: ' ' })).toBe('0801 19')
+    expect(passport.format('a-1', { separator: ' ' })).toBe('A1')
+  })
+})
+
+describe('metadata', () => {
+  it('marks structural vs loose validation, with sources', () => {
+    expect([dni, rtn].map((t) => t.validation)).toEqual([
+      'structural',
+      'structural',
+    ])
+    expect([passport, residence].map((t) => t.validation)).toEqual([
+      'loose',
+      'loose',
+    ])
+    for (const t of [dni, rtn, passport, residence]) {
+      expect(t.sources.length).toBeGreaterThan(0)
+      for (const s of t.sources) expect(s.url).toMatch(/^https:\/\//)
+    }
+  })
+
+  it('has masks for numeric documents that match their examples', () => {
+    expect(dni.mask?.replace(/0/g, '9')).toBe(dni.example.replace(/\d/g, '9'))
+    expect(rtn.mask?.replace(/0/g, '9')).toBe(rtn.example.replace(/\d/g, '9'))
+    expect(passport.mask).toBeUndefined()
+  })
+})
+
+describe('validateDocument', () => {
+  it('validates supported types like the type itself', () => {
+    expect(validateDocument('hn', 'dni', '0801-1990-00000')).toEqual(
+      dni.validate('0801-1990-00000'),
+    )
+    expect(validateDocument('HN', 'RTN', '1', { locale: 'es' })).toMatchObject({
+      error: 'INVALID_LENGTH',
+      message: messages.es.INVALID_LENGTH,
+    })
+  })
+
+  it('returns UNSUPPORTED_DOCUMENT_TYPE and warns once per type', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    expect(validateDocument('GT', 'CUI', '123')).toEqual({
+      valid: false,
+      error: 'UNSUPPORTED_DOCUMENT_TYPE',
+    })
+    validateDocument('gt', 'cui', '456')
+    validateDocument('HN', 'OTRO', '1', { locale: 'en' })
+    expect(warn).toHaveBeenCalledTimes(2)
+    expect(warn.mock.calls[0]?.[0]).toContain('GT:CUI')
+    warn.mockRestore()
   })
 })
