@@ -32,5 +32,3 @@ export function fail(
     ? { valid: false, error, message: messages[options.locale][error] }
     : { valid: false, error }
 }
-
-export const hasSeparators = (value: string) => /[\s.-]/.test(value)

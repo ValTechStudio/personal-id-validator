@@ -4,8 +4,8 @@ import type { DocumentType, ValidateOptions, ValidationResult } from './types'
 
 export type {
   DocumentType,
-  FormatOptions,
   Locale,
+  MaskOptions,
   ValidateOptions,
   ValidationError,
   ValidationResult,

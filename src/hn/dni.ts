@@ -1,11 +1,6 @@
 import type { DocumentType, ValidateOptions } from '../types'
 import { territory, type Territory } from './municipalities'
-import {
-  compactNumeric,
-  formatComplete,
-  formatDigits,
-  validateNumeric,
-} from './numeric'
+import { compactNumeric, maskDigits, validateNumeric } from './numeric'
 import { RNP_CODES } from './sources'
 
 const validate = (value: string, options?: ValidateOptions) =>
@@ -21,7 +16,7 @@ export interface DniParts extends Territory {
 export function parse(value: string): DniParts | undefined {
   const result = validate(value)
   if (!result.valid) return undefined
-  const c = result.compact
+  const c = result.value
   return { ...territory(c), year: Number(c.slice(4, 8)), sequence: c.slice(8) }
 }
 
@@ -41,7 +36,6 @@ export const dni: DocumentType = {
   maxLength: 15,
   mask: '0000-0000-00000',
   compact: compactNumeric,
-  format: (value, options) => formatComplete(value, 13, options),
-  formatPartial: (value, options) => formatDigits(value, 13, options),
+  applyMask: (value, options) => maskDigits(value, 13, options),
   validate,
 }

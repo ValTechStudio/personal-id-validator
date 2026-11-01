@@ -1,5 +1,5 @@
-import { fail, hasSeparators } from '../messages'
-import type { FormatOptions, ValidateOptions, ValidationResult } from '../types'
+import { fail } from '../messages'
+import type { MaskOptions, ValidateOptions, ValidationResult } from '../types'
 import { checkTerritory, checkYear } from './municipalities'
 
 // Shared by DNI and RTN, which both start with DDMM-YYYY-NNNNN.
@@ -10,21 +10,19 @@ export function validateNumeric(
   length: number,
   options?: ValidateOptions,
 ): ValidationResult {
-  if (options?.allowSeparators === false && hasSeparators(value))
-    return fail('INVALID_FORMAT', options)
   const compact = compactNumeric(value)
   if (!/^\d*$/.test(compact)) return fail('INVALID_FORMAT', options)
   if (compact.length !== length) return fail('INVALID_LENGTH', options)
   const error =
     checkTerritory(compact) ?? checkYear(Number(compact.slice(4, 8)))
-  return error ? fail(error, options) : { valid: true, compact }
+  return error ? fail(error, options) : { valid: true, value: compact }
 }
 
 /** Inserts the separator after positions 4 and 8 (and 13 for RTN) as digits arrive. */
-export function formatDigits(
+export function maskDigits(
   value: string,
   length: number,
-  options?: FormatOptions,
+  options?: MaskOptions,
 ): string {
   const digits = value.replace(/\D/g, '').slice(0, length)
   return [
@@ -35,15 +33,4 @@ export function formatDigits(
   ]
     .filter(Boolean)
     .join(options?.separator ?? '-')
-}
-
-export function formatComplete(
-  value: string,
-  length: number,
-  options?: FormatOptions,
-): string {
-  const c = compactNumeric(value)
-  return new RegExp(`^\\d{${length}}$`).test(c)
-    ? formatDigits(c, length, options)
-    : c
 }

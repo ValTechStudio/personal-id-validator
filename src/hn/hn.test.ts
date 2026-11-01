@@ -45,15 +45,14 @@ describe('DNI', () => {
     expect(dni.validate(value)).toEqual({ valid: false, error })
   })
 
-  it('formats', () => {
-    expect(dni.format('0801199000000')).toBe('0801-1990-00000')
-    expect(dni.format('080119')).toBe('080119')
-    expect(dni.formatPartial('0801')).toBe('0801')
-    expect(dni.formatPartial('08011')).toBe('0801-1')
-    expect(dni.formatPartial('0801-1990-0')).toBe('0801-1990-0')
-    expect(dni.formatPartial('0801199000000999')).toBe('0801-1990-00000')
-    expect(dni.formatPartial('ab08')).toBe('08')
-    expect(dni.formatPartial(dni.example)).toBe(dni.example)
+  it('applies the mask', () => {
+    expect(dni.applyMask('0801199000000')).toBe('0801-1990-00000')
+    expect(dni.applyMask('0801')).toBe('0801')
+    expect(dni.applyMask('08011')).toBe('0801-1')
+    expect(dni.applyMask('0801-1990-0')).toBe('0801-1990-0')
+    expect(dni.applyMask('0801199000000999')).toBe('0801-1990-00000')
+    expect(dni.applyMask('ab08')).toBe('08')
+    expect(dni.applyMask(dni.example)).toBe(dni.example)
     expect(dni.example).toHaveLength(dni.maxLength)
   })
 
@@ -72,7 +71,7 @@ describe('RTN', () => {
   it('accepts 14 digits starting with a valid territory and year', () => {
     expect(rtn.validate('0801-1990-00000-1')).toEqual({
       valid: true,
-      compact: '08011990000001',
+      value: '08011990000001',
     })
   })
 
@@ -85,10 +84,9 @@ describe('RTN', () => {
     expect(rtn.validate(value)).toEqual({ valid: false, error })
   })
 
-  it('formats and parses', () => {
-    expect(rtn.format('08011990000001')).toBe('0801-1990-00000-1')
-    expect(rtn.formatPartial('0801199000000')).toBe('0801-1990-00000')
-    expect(rtn.formatPartial('08011990000001')).toBe('0801-1990-00000-1')
+  it('applies the mask and parses', () => {
+    expect(rtn.applyMask('0801199000000')).toBe('0801-1990-00000')
+    expect(rtn.applyMask('08011990000001')).toBe('0801-1990-00000-1')
     expect(rtn.example).toHaveLength(rtn.maxLength)
     expect(parseRtn('0801-1990-00000-1')).toMatchObject({
       municipality: { code: '0801', name: 'Distrito Central' },
@@ -101,9 +99,9 @@ describe('passport and residence card', () => {
   it('normalizes case and separators', () => {
     expect(passport.validate(' a 000-0000 ')).toEqual({
       valid: true,
-      compact: 'A0000000',
+      value: 'A0000000',
     })
-    expect(residence.formatPartial('ab-12')).toBe('AB12')
+    expect(residence.applyMask('ab-12')).toBe('AB12')
   })
 
   it('enforces length and characters', () => {
@@ -141,19 +139,6 @@ describe('getDocumentType', () => {
 })
 
 describe('options', () => {
-  it('allowSeparators: false only accepts compact input', () => {
-    const strict = { allowSeparators: false }
-    expect(dni.validate('0801199000000', strict).valid).toBe(true)
-    expect(dni.validate('0801-1990-00000', strict)).toEqual({
-      valid: false,
-      error: 'INVALID_FORMAT',
-    })
-    expect(passport.validate('a0000000', strict).valid).toBe(true)
-    expect(passport.validate('A 0000000', strict)).toMatchObject({
-      error: 'INVALID_FORMAT',
-    })
-  })
-
   it('locale adds a message to failures only', () => {
     expect(dni.validate('0899199000000', { locale: 'en' })).toEqual({
       valid: false,
@@ -165,16 +150,16 @@ describe('options', () => {
     )
   })
 
-  it('separator changes format and formatPartial', () => {
-    expect(dni.format('0801199000000', { separator: ' ' })).toBe(
+  it('separator changes applyMask', () => {
+    expect(dni.applyMask('0801199000000', { separator: ' ' })).toBe(
       '0801 1990 00000',
     )
-    expect(rtn.format('08011990000001', { separator: '' })).toBe(
+    expect(rtn.applyMask('08011990000001', { separator: '' })).toBe(
       '08011990000001',
     )
-    expect(dni.formatPartial('080119', { separator: '.' })).toBe('0801.19')
-    expect(dni.formatPartial('0801 19', { separator: ' ' })).toBe('0801 19')
-    expect(passport.format('a-1', { separator: ' ' })).toBe('A1')
+    expect(dni.applyMask('080119', { separator: '.' })).toBe('0801.19')
+    expect(dni.applyMask('0801 19', { separator: ' ' })).toBe('0801 19')
+    expect(passport.applyMask('a-1', { separator: ' ' })).toBe('A1')
   })
 })
 
